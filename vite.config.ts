@@ -1,9 +1,7 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
 export default defineConfig({
+  base: "/InfraAI-DX-OS/",
   plugins: [react()],
-  base: '/InfraAI-DX-OS/',
-  server: { port: 3000 },
-  build: { chunkSizeWarningLimit: 2000 },
-});
+})
