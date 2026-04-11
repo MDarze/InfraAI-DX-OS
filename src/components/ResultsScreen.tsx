@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import type { Assessment } from '../types';
 import { analyzeAssessment, AXIS_LABELS } from '../engine/scoring';
 import { generatePDF } from '../pdf/generator';
+import { submitAssessmentToBackend } from '../api/client';
 import { ArrowLeft, Download, FileJson, TrendingUp, AlertTriangle, Zap, List, Shield } from 'lucide-react';
 
 function ScoreBar({ score, max = 5 }: { score: number; max?: number }) {
@@ -24,6 +25,16 @@ export default function ResultsScreen({ assessment, onBack, onRefresh }: {
   assessment: Assessment; onBack: () => void; onRefresh: () => void;
 }) {
   const analysis = useMemo(() => analyzeAssessment(assessment), [assessment]);
+
+  // Submit to backend once per assessment open (fire-and-forget)
+  const submitted = useRef(false);
+  useEffect(() => {
+    if (submitted.current) return;
+    submitted.current = true;
+    submitAssessmentToBackend(assessment).catch(err =>
+      console.warn('[InfraAI] Backend submission failed (offline mode):', err),
+    );
+  }, [assessment.id]);
 
   function exportJSON() {
     const blob = new Blob([JSON.stringify({ assessment, analysis }, null, 2)], { type: 'application/json' });

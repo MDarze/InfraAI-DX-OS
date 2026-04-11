@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { createAssessment } from '../storage/assessments';
 import { loadDemoAssessment } from '../engine/demo';
+import { registerAssessment } from '../api/client';
 import type { Assessment } from '../types';
 import { Building2, Zap, ChevronRight } from 'lucide-react';
 
@@ -10,13 +11,23 @@ export default function StartScreen({ onCreated }: { onCreated: (a: Assessment) 
   const [assessorName, setAssessorName] = useState('');
   const [size, setSize] = useState<'<50' | '50-200' | '200+'>('50-200');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
 
-  function submit() {
+  async function submit() {
     const e: Record<string, string> = {};
     if (!clientName.trim()) e.clientName = 'Client name required';
     if (!assessorName.trim()) e.assessorName = 'Assessor name required';
     if (Object.keys(e).length) { setErrors(e); return; }
+
+    setLoading(true);
     const a = createAssessment(clientName.trim(), assessorName.trim(), size, projectName.trim() || undefined);
+
+    // Register with backend (non-blocking — local assessment works if backend is offline)
+    registerAssessment(a).catch(err =>
+      console.warn('[InfraAI] Backend registration failed (offline mode):', err),
+    );
+
+    setLoading(false);
     onCreated(a);
   }
 
@@ -82,8 +93,8 @@ export default function StartScreen({ onCreated }: { onCreated: (a: Assessment) 
           </div>
         </div>
 
-        <button className="btn-primary" onClick={submit}>
-          Create Assessment <ChevronRight size={16} />
+        <button className="btn-primary" onClick={submit} disabled={loading}>
+          {loading ? 'Creating…' : <><span>Create Assessment</span> <ChevronRight size={16} /></>}
         </button>
 
         <div className="divider"><span>OR</span></div>
